@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            flex: 1 1 200px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+        .in-stock {
+            background-color: #4CAF50; /* Green */
+        }
+        .low-stock {
+            background-color: #FF9800; /* Orange */
+        }
+        .out-of-stock {
+            background-color: #F44336; /* Red */
+        }
+        .action-btn {
+            margin-right: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .update-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        .update-btn:hover {
+            background-color: #0b7dda;
+        }
+        .sell-btn {
+            background-color: #FF9800;
+            color: white;
+        }
+        .sell-btn:hover {
+            background-color: #e68900;
+        }
+        .restock-btn {
+            background-color: #9C27B0;
+            color: white;
+        }
+        .restock-btn:hover {
+            background-color: #7b1fa2;
+        }
+        .remove-btn {
+            background-color: #F44336;
+            color: white;
+        }
+        .remove-btn:hover {
+            background-color: #da190b;
+        }
+        @media (max-width: 768px) {
+            .form-container {
+                flex-direction: column;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 14px;
+            }
+            .action-btn {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Inventory Management System</h1>
+        
+        <div class="form-container">
+            <div class="form-group">
+                <label for="productName">Product Name:</label>
+                <input type="text" id="productName" placeholder="Enter product name">
+            </div>
+            <div class="form-group">
+                <label for="productCategory">Category:</label>
+                <input type="text" id="productCategory" placeholder="Enter category">
+            </div>
+            <div class="form-group">
+                <label for="productQuantity">Quantity:</label>
+                <input type="number" id="productQuantity" placeholder="Enter quantity" min="0">
+            </div>
+            <div class="form-group">
+                <label for="productPrice">Price:</label>
+                <input type="number" id="productPrice" placeholder="Enter price" min="0" step="0.01">
+            </div>
+        </div>
+        
+        <button onclick="addProduct()">Add Product</button>
+        
+        <div class="table-container">
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryBody">
+                    <!-- Products will be added here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let inventory = [];
+        let editingIndex = -1;
+
+        function addProduct() {
+            const name = document.getElementById('productName').value.trim();
+            const category = document.getElementById('productCategory').value.trim();
+            const quantity = parseInt(document.getElementById('productQuantity').value);
+            const price = parseFloat(document.getElementById('productPrice').value);
+
+            if (name === '' || category === '' || isNaN(quantity) || quantity < 0 || isNaN(price) || price < 0) {
+                alert('Please enter valid product details.');
+                return;
+            }
+
+            if (editingIndex === -1) {
+                inventory.push({ name, category, quantity, price });
+            } else {
+                inventory[editingIndex] = { name, category, quantity, price };
+                editingIndex = -1;
+                document.querySelector('button[onclick="addProduct()"]').textContent = 'Add Product';
+            }
+
+            saveInventory();
+            updateTable();
+            clearForm();
+        }
+
+        function removeProduct(index) {
+            inventory.splice(index, 1);
+            saveInventory();
+            updateTable();
+        }
+
+        function updateProduct(index) {
+            const product = inventory[index];
+            document.getElementById('productName').value = product.name;
+            document.getElementById('productCategory').value = product.category;
+            document.getElementById('productQuantity').value = product.quantity;
+            document.getElementById('productPrice').value = product.price;
+            editingIndex = index;
+            document.querySelector('button[onclick="addProduct()"]').textContent = 'Update Product';
+        }
+
+        function sellProduct(index) {
+            const quantity = parseInt(prompt('Enter quantity to sell:'));
+            if (isNaN(quantity) || quantity <= 0) {
+                alert('Invalid quantity.');
+                return;
+            }
+            if (inventory[index].quantity < quantity) {
+                alert('Not enough stock.');
+                return;
+            }
+            inventory[index].quantity -= quantity;
+            saveInventory();
+            updateTable();
+        }
+
+        function restockProduct(index) {
+            const quantity = parseInt(prompt('Enter quantity to restock:'));
+            if (isNaN(quantity) || quantity <= 0) {
+                alert('Invalid quantity.');
+                return;
+            }
+            inventory[index].quantity += quantity;
+            saveInventory();
+            updateTable();
+        }
+
+        function getStatus(quantity) {
+            if (quantity === 0) return { text: 'Out of Stock', class: 'out-of-stock' };
+            if (quantity < 5) return { text: 'Low Stock', class: 'low-stock' };
+            return { text: 'In Stock', class: 'in-stock' };
+        }
+
+        function saveInventory() {
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+        }
+
+        function loadInventory() {
+            const stored = localStorage.getItem('inventory');
+            if (stored) {
+                inventory = JSON.parse(stored);
+                updateTable();
+            }
+        }
+
+        function clearForm() {
+            document.getElementById('productName').value = '';
+            document.getElementById('productCategory').value = '';
+            document.getElementById('productQuantity').value = '';
+            document.getElementById('productPrice').value = '';
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('inventoryBody');
+            tbody.innerHTML = '';
+
+            inventory.forEach((product, index) => {
+                const status = getStatus(product.quantity);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.name}</td>
+                    <td>${product.category}</td>
+                    <td>${product.quantity}</td>
+                    <td>$${product.price.toFixed(2)}</td>
+                    <td><span class="status ${status.class}">${status.text}</span></td>
+                    <td>
+                        <button class="action-btn update-btn" onclick="updateProduct(${index})">Update</button>
+                        <button class="action-btn sell-btn" onclick="sellProduct(${index})">Sell</button>
+                        <button class="action-btn restock-btn" onclick="restockProduct(${index})">Restock</button>
+                        <button class="action-btn remove-btn" onclick="removeProduct(${index})">Remove</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Load inventory on page load
+        window.onload = loadInventory;
+    </script>
+</body>
+</html>
